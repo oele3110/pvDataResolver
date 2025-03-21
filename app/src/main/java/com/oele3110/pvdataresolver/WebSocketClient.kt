@@ -39,14 +39,14 @@ class WebSocketClient {
         }
 
         override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
-            Log.d("WebSocket", "⚠️ Verbindung wird geschlossen: $reason")
+            Log.d("WebSocket", "⚠️ Verbindung wird geschlossen: $reason, code: $code")
             _messages.value = reason
-            webSocket.close(1000, null)
+            webSocket.close(code, null)
         }
 
         override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
-            Log.d("WebSocket", "❌ Verbindung geschlossen: $reason")
-            _messages.value = reason
+            Log.d("WebSocket", "❌ Verbindung geschlossen: $reason, code: $code")
+            _messages.value = "$reason, code: $code"
             _connectionStatus.value = false
         }
 
