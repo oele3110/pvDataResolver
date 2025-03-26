@@ -6,8 +6,8 @@ import com.beust.klaxon.JsonValue
 import com.beust.klaxon.Klaxon
 import com.oele3110.pvdataresolver.pvdata.PvDataResponse
 import com.oele3110.pvdataresolver.pvdata.DataType
+import com.oele3110.pvdataresolver.pvdata.PvConfig
 import com.oele3110.pvdataresolver.pvdata.PvData
-import kotlin.math.roundToLong
 
 
 class JsonParser {
@@ -44,26 +44,32 @@ class JsonParser {
         }
     }
 
-    fun beautyMe(pvDataResponse: PvDataResponse) : String{
+    fun beautyMe(pvDataList: List<PvData>, pvConfigList: List<PvConfig>) : String{
         val stringBuilder = StringBuilder()
-        pvDataResponse.pvData.forEach { pvData ->
-            val value = getValue(pvData)
-            val unit = getUnit(pvData)
-            stringBuilder.appendLine("${pvData.displayString}: $value $unit")
+        pvDataList.forEach { pvData ->
+            try {
+                val config = pvConfigList.first { it.endpoint == pvData.endpoint }
+                val value = getValue(pvData, config)
+                val unit = getUnit(pvData, config)
+                stringBuilder.appendLine("${config.displayString}: $value $unit")
+            }
+            catch (e: NoSuchElementException) {
+                Log.w(tag, "Missing config for endpoint ${pvData.endpoint}")
+            }
         }
         return stringBuilder.toString()
 
     }
 
-    private fun getValue(pvData: PvData): Any {
-        if (pvData.division != null && pvData.divisionUnit != null && pvData.divisionDigits != null) {
+    private fun getValue(pvData: PvData, config: PvConfig): Any {
+        if (config.division != null && config.divisionUnit != null && config.divisionDigits != null) {
             val doubleValue = when (pvData.value) {
                 is Int -> pvData.value.toDouble()
                 is Double -> pvData.value
                 else -> 0.0
             }
-            if (doubleValue > pvData.division) {
-                return (doubleValue / pvData.division).roundTo(pvData.divisionDigits)
+            if (doubleValue > config.division) {
+                return (doubleValue / config.division).roundTo(config.divisionDigits)
             }
             return pvData.value
         }
@@ -76,20 +82,20 @@ class JsonParser {
         this.toBigDecimal().setScale(digits, java.math.RoundingMode.HALF_UP).toDouble()
 
 
-    private fun getUnit(pvData: PvData): String {
-        if (pvData.division != null && pvData.divisionUnit != null && pvData.divisionDigits != null) {
+    private fun getUnit(pvData: PvData, config: PvConfig): String {
+        if (config.division != null && config.divisionUnit != null && config.divisionDigits != null) {
             val doubleValue = when (pvData.value) {
                 is Int -> pvData.value.toDouble()
                 is Double -> pvData.value
                 else -> 0.0
             }
-            if (doubleValue > pvData.division) {
-                return pvData.divisionUnit
+            if (doubleValue > config.division) {
+                return config.divisionUnit
             }
-            return pvData.unit
+            return config.unit
         }
         else {
-            return pvData.unit
+            return config.unit
         }
 
     }
