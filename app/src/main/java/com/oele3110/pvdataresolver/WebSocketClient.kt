@@ -10,7 +10,7 @@ import okio.ByteString
 class WebSocketClient {
     private val client = OkHttpClient()
     private var webSocket: WebSocket? = null
-    private val request = Request.Builder().url("ws://192.168.178.172:8765").build()
+    private val request = Request.Builder().url("ws://192.168.178.110:8765").build()
     private val tag = "WebSocket"
 
     // StateFlow for Compose
