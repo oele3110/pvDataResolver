@@ -48,6 +48,7 @@ import com.oele3110.pvdataresolver.domain.Line
 import com.oele3110.pvdataresolver.domain.Node
 import kotlin.math.atan2
 import kotlin.math.cos
+import kotlin.math.sign
 import kotlin.math.sin
 
 
@@ -58,8 +59,7 @@ val dummyValues = EnergyValues(
     gridPowerTotal = 123,
     homeConsumption = 1534,
     sumWallboxChargePowerTotal = 542,
-    powerHeaterRod = 754,
-    houseConsumption = 300
+    powerHeaterRod = 754, houseConsumption = 300, powerHeating = 723, powerAc = 211
 )
 
 class MainActivity : ComponentActivity() {
@@ -100,14 +100,18 @@ fun WebSocketApp() {
 
 val nodes = listOf(
     Node("PV", R.drawable.pv, 0.5f, 0.1f),
-    Node("Battery", R.drawable.battery, 0.15f, 0.25f),
-    Node("Inverter", R.drawable.inverter, 0.5f, 0.25f),
-    Node("SEM", R.drawable.sem, 0.5f, 0.4f),
-    Node("Grid", R.drawable.grid, 0.85f, 0.4f),
-    Node("Wallbox", R.drawable.wallbox, 0.15f, 0.55f),
-    Node("Home", R.drawable.house_day, 0.5f, 0.55f),
-    Node("Heater", R.drawable.water_heater, 0.85f, 0.55f),
-    Node("House Consumption", R.drawable.house_consumption, 0.5f, 0.7f)
+    Node("Battery", R.drawable.battery, 0.15f, 0.225f),
+    Node("Inverter", R.drawable.inverter, 0.5f, 0.225f),
+    Node("SEM", R.drawable.sem, 0.5f, 0.35f),
+    Node("Grid", R.drawable.grid, 0.85f, 0.35f),
+    Node("Wallbox", R.drawable.wallbox, 0.15f, 0.475f),
+    Node("Home", R.drawable.house_day, 0.5f, 0.475f),
+    Node("Heater", R.drawable.water_heater, 0.85f, 0.475f),
+    // when only home consumption is shown, use this setting, otherwise the ones below
+    Node("House Consumption", R.drawable.house_consumption, 0.5f, 0.6f),
+    //Node("House Consumption", R.drawable.house_consumption, 0.5f, 0.7f),
+    //Node("Heating", R.drawable.heating, 0.15f, 0.6f),
+    //Node("AC", R.drawable.ac, 0.85f, 0.6f)
 )
 
 val lines = listOf(
@@ -118,7 +122,12 @@ val lines = listOf(
     Line("SEM", "Home") { it.homeConsumption },
     Line("Home", "Wallbox") { it.sumWallboxChargePowerTotal },
     Line("Home", "Heater") { it.powerHeaterRod },
-    Line("Home", "House Consumption") { it.houseConsumption })
+    // when only home consumption is shown, use this setting, otherwise the ones below
+    Line("Home", "House Consumption") { it.houseConsumption },
+    //Line("Home", "House Consumption", textOffsetY = 0.4f) { it.houseConsumption },
+    //Line("Home", "Heating") { it.powerHeating },
+    //Line("Home", "AC") { it.powerAc }
+)
 
 @SuppressLint("UnusedBoxWithConstraintsScope")
 @Composable
@@ -135,6 +144,12 @@ fun EnergyFlowScreen(values: EnergyValues) {
         val progress by transition.animateFloat(
             initialValue = 0f, targetValue = 1f, animationSpec = infiniteRepeatable(
                 animation = tween(4000, easing = LinearEasing)
+            ), label = ""
+        )
+
+        val progressCorner by transition.animateFloat(
+            initialValue = 0f, targetValue = 1f, animationSpec = infiniteRepeatable(
+                animation = tween(6000, easing = LinearEasing)
             ), label = ""
         )
 
@@ -160,9 +175,26 @@ fun EnergyFlowScreen(values: EnergyValues) {
                     adjustedEnd = start - (-unit) * iconHalf
                 }
 
-                drawText(adjustedStart, adjustedEnd, value, iconHalf)
-                drawArrows(adjustedStart, adjustedEnd)
-                drawAnimatedDots(progress, value, rawVector, adjustedStart, adjustedEnd)
+                if (adjustedStart.x != adjustedEnd.x && adjustedStart.y != adjustedEnd.y) {
+
+
+                    val newAdjustedStart = Offset(
+                        if (adjustedStart.x != adjustedEnd.x) start.x + iconHalf * sign(adjustedEnd.x - adjustedStart.x) else start.x,
+                        if (adjustedStart.y != adjustedEnd.y) start.y + iconHalf * sign(adjustedEnd.y - adjustedStart.y) else start.y
+                    )
+                    val newAdjustedEnd = Offset(
+                        x = if (adjustedStart.x != adjustedEnd.x) end.x - iconHalf * sign(adjustedEnd.x - adjustedStart.x) else start.x,
+                        y = if (adjustedStart.y != adjustedEnd.y) end.y else start.y
+                    )
+
+                    drawCornerLineAndArrow(newAdjustedStart, newAdjustedEnd)
+                    drawCornerText(newAdjustedStart, newAdjustedEnd, value)
+                    drawCornerAnimatedDots(progressCorner, value, newAdjustedStart, newAdjustedEnd)
+                } else {
+                    drawStraightLineAndArrow(adjustedStart, adjustedEnd)
+                    drawStraightText(adjustedStart, adjustedEnd, value, iconHalf, length * line.textOffsetX, length * line.textOffsetY)
+                    drawStraightAnimatedDots(progress, value, rawVector, adjustedStart, adjustedEnd)
+                }
             }
         }
 
@@ -180,16 +212,13 @@ fun EnergyFlowScreen(values: EnergyValues) {
     }
 }
 
-private fun DrawScope.drawText(
-    adjustedStart: Offset,
-    adjustedEnd: Offset,
-    value: Int,
-    iconHalf: Float
+private fun DrawScope.drawStraightText(
+    adjustedStart: Offset, adjustedEnd: Offset, value: Int, iconHalf: Float, textOffsetX: Float = 0f, textOffsetY: Float = 0f
 ) {
     if (adjustedStart.x == adjustedEnd.x) {
         // if line is vertical, adjust text position to have it right from the line
         drawTextOnLine(
-            "$value W", (adjustedStart.x + adjustedEnd.x) / 2 + iconHalf, (adjustedStart.y + adjustedEnd.y) / 2
+            "$value W", (adjustedStart.x + adjustedEnd.x + textOffsetX) / 2 + iconHalf, (adjustedStart.y + adjustedEnd.y + textOffsetY) / 2
         )
     } else {
         // if line is horizontal, adjust text position to have it above the line
@@ -199,59 +228,93 @@ private fun DrawScope.drawText(
     }
 }
 
-private fun DrawScope.drawArrows(
-    adjustedStart: Offset,
-    adjustedEnd: Offset
+private fun DrawScope.drawCornerText(start: Offset, end: Offset, value: Int) {
+    val corner = Offset(start.x, end.y)
+    drawTextOnLine(
+        "$value W", (corner.x + end.x) / 2, end.y - 20f
+    )
+}
+
+private fun DrawScope.drawStraightLineAndArrow(
+    adjustedStart: Offset, adjustedEnd: Offset
 ) {
-    // line is drawn from adjustedStart to adjustedEnd
+    // line is drawn directly from adjustedStart to adjustedEnd
     drawLine(colorBlue, adjustedStart, adjustedEnd, strokeWidth = 6f, cap = StrokeCap.Round)
+    drawArrow(adjustedEnd, adjustedStart)
+}
 
-    val arrowCenter = adjustedStart + (adjustedEnd - adjustedStart)
 
+private fun DrawScope.drawCornerLineAndArrow(start: Offset, end: Offset) {
+    val corner = Offset(start.x, end.y)
+
+    // vertical
+    drawLine(colorBlue, Offset(start.x, start.y), Offset(corner.x, corner.y), 6f, cap = StrokeCap.Round)
+    // horizontal
+    drawLine(colorBlue, Offset(corner.x, corner.y), Offset(end.x, end.y), 6f, cap = StrokeCap.Round)
+
+    drawArrow(end, Offset(corner.x, corner.y))
+}
+
+private fun DrawScope.drawArrow(end: Offset, beforeEnd: Offset) {
     val angle = atan2(
-        (adjustedEnd.y - adjustedStart.y).toDouble(), (adjustedEnd.x - adjustedStart.x).toDouble()
+        (end.y - beforeEnd.y).toDouble(), (end.x - beforeEnd.x).toDouble()
     ).toFloat()
 
     val arrowSize = 30f
+    val arrowCenter = end
 
     val leftWing = Offset(
-        (arrowCenter.x - arrowSize * cos((angle - Math.PI / 6)).toFloat()),
-        (arrowCenter.y - arrowSize * sin((angle - Math.PI / 6)).toFloat())
+        (arrowCenter.x - arrowSize * cos((angle - Math.PI / 6)).toFloat()), (arrowCenter.y - arrowSize * sin((angle - Math.PI / 6)).toFloat())
     )
     val rightWing = Offset(
-        (arrowCenter.x - arrowSize * cos((angle + Math.PI / 6)).toFloat()),
-        (arrowCenter.y - arrowSize * sin((angle + Math.PI / 6)).toFloat())
+        (arrowCenter.x - arrowSize * cos((angle + Math.PI / 6)).toFloat()), (arrowCenter.y - arrowSize * sin((angle + Math.PI / 6)).toFloat())
     )
 
     drawLine(colorBlue, leftWing, arrowCenter, strokeWidth = 6f, cap = StrokeCap.Round)
     drawLine(colorBlue, rightWing, arrowCenter, strokeWidth = 6f, cap = StrokeCap.Round)
 }
 
-private fun DrawScope.drawAnimatedDots(
-    progress: Float,
-    value: Int,
-    rawVector: Offset,
-    adjustedStart: Offset,
-    adjustedEnd: Offset
+private fun DrawScope.drawStraightAnimatedDots(
+    progress: Float, value: Int, rawVector: Offset, start: Offset, end: Offset
 ) {
-    val progress1 = progress
-    val progress2 = (progress + 0.33f) % 1f
-    val progress3 = (progress + 0.66f) % 1f
-
     // this offset makes sure that the dots are not exceeding the arrow
     val endOffset = if (value > 0) rawVector * 0.05f else -rawVector * 0.05f
 
-    if (progress1 < 0.6f) {
-        val dot = adjustedStart + (adjustedEnd - adjustedStart - endOffset) * (progress1 / 0.6f)
-        drawCircle(colorBlue, 6f, center = dot)
+    listOf(
+        Triple(0.0f, 0.6f, 12f), Triple(0.1f, 0.7f, 9f), Triple(0.2f, 0.8f, 6f)
+    ).forEach { (s, e, size) ->
+        if (progress in s..e) {
+            val localProgress = ((progress - s) / (e - s)).coerceIn(0f, 1f)
+            val dot = start + (end - start - endOffset) * localProgress
+            drawCircle(colorBlue, size, center = dot)
+        }
     }
-    if (progress2 > 0.2f && progress2 < 0.8f) {
-        val dot = adjustedStart + (adjustedEnd - adjustedStart - endOffset) * ((progress2 - 0.2f) / 0.6f)
-        drawCircle(colorBlue, 9f, center = dot)
-    }
-    if (progress3 > 0.4f && progress3 < 0.98f) {
-        val dot = adjustedStart + (adjustedEnd - adjustedStart - endOffset) * ((progress3 - 0.4f) / 0.58f)
-        drawCircle(colorBlue, 12f, center = dot)
+}
+
+private fun DrawScope.drawCornerAnimatedDots(progress: Float, value: Int, start: Offset, end: Offset) {
+    val corner = Offset(start.x, end.y)
+
+    val rawVector = end - corner
+    // this offset makes sure that the dots are not exceeding the arrow
+    val endOffset = if (value > 0) rawVector * 0.1f else -rawVector * 0.1f
+
+    val dotAnimations = listOf(
+        Triple(0.0f, 0.6f, 12f), // (start, end, size)
+        Triple(0.1f, 0.7f, 9f), Triple(0.2f, 0.8f, 6f)
+    )
+
+    dotAnimations.forEach { (animStart, animEnd, size) ->
+        if (progress in animStart..animEnd) {
+            val localProgress = ((progress - animStart) / (animEnd - animStart)).coerceIn(0f, 1f)
+            val dot = if (localProgress < 0.5f) {
+                val p = localProgress / 0.5f
+                start + (corner - start) * p
+            } else {
+                val p = (localProgress - 0.5f) / 0.5f
+                corner + (end - corner - endOffset) * p
+            }
+            drawCircle(colorBlue, size, center = dot)
+        }
     }
 }
 
