@@ -8,5 +8,7 @@ data class EnergyValues(
     val homeConsumption: Int,                   // power consumed by whole home
     val sumWallboxChargePowerTotal: Int,        // total power to wallbox
     val powerHeaterRod: Int,                    // power to heater rod
-    val houseConsumption: Int                   // power to house
+    val houseConsumption: Int,                  // power to house
+    val powerHeating: Int,                      // power to heating
+    val powerAc: Int                            // power to AC
 )
