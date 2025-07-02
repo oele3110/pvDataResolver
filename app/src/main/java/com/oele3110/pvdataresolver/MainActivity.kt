@@ -2,6 +2,8 @@ package com.oele3110.pvdataresolver
 
 
 import android.annotation.SuppressLint
+import android.content.res.Configuration
+import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import android.graphics.Paint
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -13,6 +15,7 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -36,17 +39,22 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import com.oele3110.pvdataresolver.domain.EnergyValues
 import com.oele3110.pvdataresolver.domain.Line
 import com.oele3110.pvdataresolver.domain.Node
 import com.oele3110.pvdataresolver.domain.TextPosition
+import com.oele3110.pvdataresolver.ui.theme.PvDataResolverTheme
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.sign
@@ -73,12 +81,28 @@ val colorBlue: Color = Color(27, 175, 232, 255)
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        WindowCompat.setDecorFitsSystemWindows(window, false)
         setContent {
-            //WebSocketApp()
-            EnergyFlowScreen(values = dummyValues)
+            PvDataResolverTheme {
+                SetStatusBarColor()
+                //WebSocketApp()
+                EnergyFlowScreen(values = dummyValues)
+            }
+
         }
     }
+
+    @Composable
+    private fun SetStatusBarColor() {
+        val color = MaterialTheme.colorScheme.background
+        val window = this.window
+        window.statusBarColor = color.toArgb()
+        val insetsController = WindowInsetsControllerCompat(window, window.decorView)
+        insetsController.isAppearanceLightStatusBars = color.luminance() > 0.5f
+    }
+
 }
+
 
 @Composable
 fun WebSocketApp() {
@@ -159,7 +183,11 @@ val lines = listOf(
 @SuppressLint("UnusedBoxWithConstraintsScope")
 @Composable
 fun EnergyFlowScreen(values: EnergyValues) {
-    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+    BoxWithConstraints(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
         val widthPx = with(LocalDensity.current) { maxWidth.toPx() }
         val heightPx = with(LocalDensity.current) { maxHeight.toPx() }
         val iconSizePx = with(LocalDensity.current) { 64.dp.toPx() }
@@ -180,6 +208,7 @@ fun EnergyFlowScreen(values: EnergyValues) {
             ), label = ""
         )
 
+        val onBackgroundColor = MaterialTheme.colorScheme.onBackground.toArgb()
         Canvas(modifier = Modifier.fillMaxSize()) {
             lines.forEach { line ->
                 val start = nodePositions[line.from] ?: return@forEach
@@ -215,11 +244,19 @@ fun EnergyFlowScreen(values: EnergyValues) {
                     )
 
                     drawCornerLineAndArrow(newAdjustedStart, newAdjustedEnd)
-                    drawCornerText(newAdjustedStart, newAdjustedEnd, value)
+                    drawCornerText(newAdjustedStart, newAdjustedEnd, value, onBackgroundColor)
                     drawCornerAnimatedDots(progressCorner, value, newAdjustedStart, newAdjustedEnd)
                 } else {
                     drawStraightLineAndArrow(adjustedStart, adjustedEnd)
-                    drawStraightText(adjustedStart, adjustedEnd, value, iconHalf, length * line.textOffsetX, length * line.textOffsetY)
+                    drawStraightText(
+                        adjustedStart,
+                        adjustedEnd,
+                        value,
+                        onBackgroundColor,
+                        iconHalf,
+                        length * line.textOffsetX,
+                        length * line.textOffsetY
+                    )
                     drawStraightAnimatedDots(progress, value, rawVector, adjustedStart, adjustedEnd)
                 }
             }
@@ -238,7 +275,7 @@ fun EnergyFlowScreen(values: EnergyValues) {
                         }
                     ) {
                         if (nodeText != null) {
-                            Text(nodeText)
+                            Text(nodeText, color = MaterialTheme.colorScheme.onBackground)
                         }
                         Image(
                             painterResource(node.icon),
@@ -263,7 +300,7 @@ fun EnergyFlowScreen(values: EnergyValues) {
                             contentScale = ContentScale.Fit
                         )
                         if (nodeText != null) {
-                            Text(nodeText)
+                            Text(nodeText, color = MaterialTheme.colorScheme.onBackground)
                         }
                     }
                 }
@@ -289,25 +326,28 @@ fun EnergyFlowScreen(values: EnergyValues) {
 }
 
 private fun DrawScope.drawStraightText(
-    adjustedStart: Offset, adjustedEnd: Offset, value: Int, iconHalf: Float, textOffsetX: Float = 0f, textOffsetY: Float = 0f
+    adjustedStart: Offset, adjustedEnd: Offset, value: Int, onBackgroundColor: Int, iconHalf: Float, textOffsetX: Float = 0f, textOffsetY: Float = 0f
 ) {
     if (adjustedStart.x == adjustedEnd.x) {
         // if line is vertical, adjust text position to have it right from the line
         drawTextOnLine(
-            "$value W", (adjustedStart.x + adjustedEnd.x + textOffsetX) / 2 + iconHalf, (adjustedStart.y + adjustedEnd.y + textOffsetY) / 2
+            "$value W",
+            (adjustedStart.x + adjustedEnd.x + textOffsetX) / 2 + iconHalf,
+            (adjustedStart.y + adjustedEnd.y + textOffsetY) / 2,
+            onBackgroundColor
         )
     } else {
         // if line is horizontal, adjust text position to have it above the line
         drawTextOnLine(
-            "$value W", (adjustedStart.x + adjustedEnd.x) / 2, (adjustedStart.y + adjustedEnd.y) / 2 - 20f
+            "$value W", (adjustedStart.x + adjustedEnd.x) / 2, (adjustedStart.y + adjustedEnd.y) / 2 - 20f, onBackgroundColor
         )
     }
 }
 
-private fun DrawScope.drawCornerText(start: Offset, end: Offset, value: Int) {
+private fun DrawScope.drawCornerText(start: Offset, end: Offset, value: Int, onBackgroundColor: Int) {
     val corner = Offset(start.x, end.y)
     drawTextOnLine(
-        "$value W", (corner.x + end.x) / 2, end.y - 20f
+        "$value W", (corner.x + end.x) / 2, end.y - 20f, onBackgroundColor
     )
 }
 
@@ -395,17 +435,20 @@ private fun DrawScope.drawCornerAnimatedDots(progress: Float, value: Int, start:
 }
 
 
-fun DrawScope.drawTextOnLine(text: String, x: Float, y: Float) {
+fun DrawScope.drawTextOnLine(text: String, x: Float, y: Float, onBackgroundColor: Int) {
     drawContext.canvas.nativeCanvas.drawText(
         text, x, y, Paint().apply {
-            color = android.graphics.Color.BLACK
+            color = onBackgroundColor
             textSize = 36f
             textAlign = Paint.Align.CENTER
         })
 }
 
-@Preview(showBackground = true)
+@Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_NO, name = "PreviewLight")
+@Preview(showBackground = true, uiMode = UI_MODE_NIGHT_YES, name = "PreviewDark")
 @Composable
 fun EnergyFlowScreenPreview() {
-    EnergyFlowScreen(values = dummyValues)
+    PvDataResolverTheme {
+        EnergyFlowScreen(values = dummyValues)
+    }
 }
