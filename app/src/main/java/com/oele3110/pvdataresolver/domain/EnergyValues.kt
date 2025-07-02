@@ -10,5 +10,7 @@ data class EnergyValues(
     val powerHeaterRod: Int,                    // power to heater rod
     val houseConsumption: Int,                  // power to house
     val powerHeating: Int,                      // power to heating
-    val powerAc: Int                            // power to AC
+    val powerAc: Int,                           // power to AC
+    val batteryCapacity: Int,                   // battery capacity
+    val wallboxConnectionStatus: Int            // connection status
 )
