@@ -46,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import com.oele3110.pvdataresolver.domain.EnergyValues
 import com.oele3110.pvdataresolver.domain.Line
 import com.oele3110.pvdataresolver.domain.Node
+import com.oele3110.pvdataresolver.domain.TextPosition
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.sign
@@ -59,8 +60,15 @@ val dummyValues = EnergyValues(
     gridPowerTotal = 123,
     homeConsumption = 1534,
     sumWallboxChargePowerTotal = 542,
-    powerHeaterRod = 754, houseConsumption = 300, powerHeating = 723, powerAc = 211
+    powerHeaterRod = 754,
+    houseConsumption = 300,
+    powerHeating = 723,
+    powerAc = 211,
+    batteryCapacity = 79,
+    wallboxConnectionStatus = 5
 )
+const val alpha = 0.8f
+val colorBlue: Color = Color(27, 175, 232, 255)
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -100,11 +108,18 @@ fun WebSocketApp() {
 
 val nodes = listOf(
     Node("PV", R.drawable.pv, 0.5f, 0.1f),
-    Node("Battery", R.drawable.battery, 0.15f, 0.225f),
+    Node("Battery", R.drawable.battery, 0.15f, 0.225f, text = { "${it.batteryCapacity} %" }, textPosition = TextPosition.BOTTOM),
     Node("Inverter", R.drawable.inverter, 0.5f, 0.225f),
     Node("SEM", R.drawable.sem, 0.5f, 0.35f),
     Node("Grid", R.drawable.grid, 0.85f, 0.35f),
-    Node("Wallbox", R.drawable.wallbox, 0.15f, 0.475f),
+    Node(
+        "Wallbox",
+        R.drawable.wallbox,
+        0.15f,
+        0.475f,
+        text = { getWallboxConnectionStatus(it.wallboxConnectionStatus) },
+        textPosition = TextPosition.BOTTOM
+    ),
     Node("Home", R.drawable.house_day, 0.5f, 0.475f),
     Node("Heater", R.drawable.water_heater, 0.85f, 0.475f),
     // when only home consumption is shown, use this setting, otherwise the ones below
@@ -113,6 +128,18 @@ val nodes = listOf(
     //Node("Heating", R.drawable.heating, 0.15f, 0.6f),
     //Node("AC", R.drawable.ac, 0.85f, 0.6f)
 )
+
+fun getWallboxConnectionStatus(wallboxConnectionStatus: Int): String {
+    return when (wallboxConnectionStatus) {
+        2 -> "Verbunden"
+        3 -> "Pause"
+        4 -> "Initialisierung"
+        5 -> "Laden"
+        6 -> "Fehler"
+        7 -> "Service Mode"
+        else -> "Nicht verbunden"
+    }
+}
 
 val lines = listOf(
     Line("PV", "Inverter") { it.sumPvPowerInverterDc },
@@ -200,15 +227,64 @@ fun EnergyFlowScreen(values: EnergyValues) {
 
         nodes.forEach { node ->
             val pos = nodePositions[node.name]!!
-            Box(
-                Modifier
-                    .offset { IntOffset((pos.x - iconHalf).toInt(), (pos.y - iconHalf).toInt()) }
-                    .size(64.dp)) {
-                Image(
-                    painterResource(node.icon), contentDescription = node.name, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Fit
-                )
+            val nodeText = node.text(values)
+
+            when (node.textPosition) {
+                TextPosition.TOP -> {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.offset {
+                            IntOffset((pos.x - iconHalf).toInt(), (pos.y - 1.5 * iconHalf).toInt())
+                        }
+                    ) {
+                        if (nodeText != null) {
+                            Text(nodeText)
+                        }
+                        Image(
+                            painterResource(node.icon),
+                            contentDescription = node.name,
+                            modifier = Modifier.size(64.dp),
+                            contentScale = ContentScale.Fit
+                        )
+                    }
+                }
+
+                TextPosition.BOTTOM -> {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.offset {
+                            IntOffset((pos.x - iconHalf).toInt(), (pos.y - iconHalf).toInt())
+                        }
+                    ) {
+                        Image(
+                            painterResource(node.icon),
+                            contentDescription = node.name,
+                            modifier = Modifier.size(64.dp),
+                            contentScale = ContentScale.Fit
+                        )
+                        if (nodeText != null) {
+                            Text(nodeText)
+                        }
+                    }
+                }
+
+                TextPosition.NONE -> {
+                    Box(
+                        Modifier.offset {
+                            IntOffset((pos.x - iconHalf).toInt(), (pos.y - iconHalf).toInt())
+                        }
+                    ) {
+                        Image(
+                            painterResource(node.icon),
+                            contentDescription = node.name,
+                            modifier = Modifier.size(64.dp),
+                            contentScale = ContentScale.Fit
+                        )
+                    }
+                }
             }
         }
+
     }
 }
 
@@ -286,7 +362,7 @@ private fun DrawScope.drawStraightAnimatedDots(
         if (progress in s..e) {
             val localProgress = ((progress - s) / (e - s)).coerceIn(0f, 1f)
             val dot = start + (end - start - endOffset) * localProgress
-            drawCircle(colorBlue, size, center = dot)
+            drawCircle(colorBlue, size, center = dot, alpha = alpha)
         }
     }
 }
@@ -313,12 +389,11 @@ private fun DrawScope.drawCornerAnimatedDots(progress: Float, value: Int, start:
                 val p = (localProgress - 0.5f) / 0.5f
                 corner + (end - corner - endOffset) * p
             }
-            drawCircle(colorBlue, size, center = dot)
+            drawCircle(colorBlue, size, center = dot, alpha = alpha)
         }
     }
 }
 
-val colorBlue: Color = Color(43, 146, 214)
 
 fun DrawScope.drawTextOnLine(text: String, x: Float, y: Float) {
     drawContext.canvas.nativeCanvas.drawText(
