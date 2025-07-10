@@ -22,13 +22,21 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -48,6 +56,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.times
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import com.oele3110.pvdataresolver.domain.EnergyValues
@@ -86,7 +95,7 @@ class MainActivity : ComponentActivity() {
             PvDataResolverTheme {
                 SetStatusBarColor()
                 //WebSocketApp()
-                EnergyFlowScreen(values = dummyValues)
+                EnergyScreen(values = dummyValues)
             }
 
         }
@@ -131,26 +140,26 @@ fun WebSocketApp() {
 }
 
 val nodes = listOf(
-    Node("PV", R.drawable.pv, 0.5f, 0.1f),
-    Node("Battery", R.drawable.battery, 0.15f, 0.225f, text = { "${it.batteryCapacity} %" }, textPosition = TextPosition.BOTTOM),
-    Node("Inverter", R.drawable.inverter, 0.5f, 0.225f),
-    Node("SEM", R.drawable.sem, 0.5f, 0.35f),
-    Node("Grid", R.drawable.grid, 0.85f, 0.35f),
+    Node("PV", R.drawable.pv, 0.5f, 0.5f),
+    Node("Battery", R.drawable.battery, 0.15f, 2f, text = { "${it.batteryCapacity} %" }, textPosition = TextPosition.BOTTOM),
+    Node("Inverter", R.drawable.inverter, 0.5f, 2f),
+    Node("SEM", R.drawable.sem, 0.5f, 3.5f),
+    Node("Grid", R.drawable.grid, 0.85f, 3.5f),
     Node(
         "Wallbox",
         R.drawable.wallbox,
         0.15f,
-        0.475f,
+        5f,
         text = { getWallboxConnectionStatus(it.wallboxConnectionStatus) },
         textPosition = TextPosition.BOTTOM
     ),
-    Node("Home", R.drawable.house_day, 0.5f, 0.475f),
-    Node("Heater", R.drawable.water_heater, 0.85f, 0.475f),
+    Node("Home", R.drawable.house_day, 0.5f, 5f),
+    Node("Heater", R.drawable.water_heater, 0.85f, 5f),
     // when only home consumption is shown, use this setting, otherwise the ones below
-    Node("House Consumption", R.drawable.house_consumption, 0.5f, 0.6f),
-    //Node("House Consumption", R.drawable.house_consumption, 0.5f, 0.7f),
-    //Node("Heating", R.drawable.heating, 0.15f, 0.6f),
-    //Node("AC", R.drawable.ac, 0.85f, 0.6f)
+    Node("House Consumption", R.drawable.house_consumption, 0.5f, 6.5f),
+    //Node("House Consumption", R.drawable.house_consumption, 0.5f, 7.5f),
+    //Node("Heating", R.drawable.heating, 0.15f, 6.25f),
+    //Node("AC", R.drawable.ac, 0.85f, 6.25f)
 )
 
 fun getWallboxConnectionStatus(wallboxConnectionStatus: Int): String {
@@ -180,148 +189,197 @@ val lines = listOf(
     //Line("Home", "AC") { it.powerAc }
 )
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun EnergyScreen(values: EnergyValues) {
+    val scrollState = rememberScrollState()
+
+    Scaffold(topBar = {
+        TopAppBar(
+            title = { Text("Energy Flow Dashboard", style = MaterialTheme.typography.headlineLarge) })
+    }, content = { innerPadding ->
+        Column(
+            modifier = Modifier
+                .padding(innerPadding)
+                .verticalScroll(scrollState)
+        ) {
+            EnergyFlowScreen(values)
+            StatusScreen()
+            StatusScreen()
+            StatusScreen()
+        }
+    })
+}
+
+@Composable
+@Preview
+private fun StatusScreen() {
+    Card(
+        modifier = Modifier
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .fillMaxWidth(),
+        shape = MaterialTheme.shapes.medium,
+        elevation = CardDefaults.cardElevation(8.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text("Status Screen", style = MaterialTheme.typography.headlineMedium)
+            Spacer(modifier = Modifier.height(16.dp))
+            Text("This is a placeholder for the status screen.")
+        }
+    }
+}
+
 @SuppressLint("UnusedBoxWithConstraintsScope")
 @Composable
-fun EnergyFlowScreen(values: EnergyValues) {
-    BoxWithConstraints(
+private fun EnergyFlowScreen(values: EnergyValues) {
+    Card(
         modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surface),
+        shape = MaterialTheme.shapes.medium,
+        elevation = CardDefaults.cardElevation(8.dp)
     ) {
-        val widthPx = with(LocalDensity.current) { maxWidth.toPx() }
-        val heightPx = with(LocalDensity.current) { maxHeight.toPx() }
-        val iconSizePx = with(LocalDensity.current) { 64.dp.toPx() }
-        val iconHalf = iconSizePx / 2
+        val rowHeight = 80.dp
+        val topPadding = 16.dp
+        val bottomPadding = 16.dp
 
-        val nodePositions = nodes.associateBy({ it.name }, { Offset(widthPx * it.col, heightPx * it.row) })
+        val maxRow = nodes.maxOf { it.row }
+        val totalHeight = topPadding + 4 * bottomPadding + (maxRow * rowHeight)
 
-        val transition = rememberInfiniteTransition(label = "")
-        val progress by transition.animateFloat(
-            initialValue = 0f, targetValue = 1f, animationSpec = infiniteRepeatable(
-                animation = tween(4000, easing = LinearEasing)
-            ), label = ""
-        )
-
-        val progressCorner by transition.animateFloat(
-            initialValue = 0f, targetValue = 1f, animationSpec = infiniteRepeatable(
-                animation = tween(6000, easing = LinearEasing)
-            ), label = ""
-        )
-
-        val onBackgroundColor = MaterialTheme.colorScheme.onBackground.toArgb()
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            lines.forEach { line ->
-                val start = nodePositions[line.from] ?: return@forEach
-                val end = nodePositions[line.to] ?: return@forEach
-
-                val value = line.valueProvider(values)
-
-                val rawVector = end - start
-                val length = rawVector.getDistance()
-                val unit = if (length != 0f) rawVector / length else Offset.Zero
-
-                val adjustedStart: Offset
-                val adjustedEnd: Offset
-
-                if (value >= 0) {
-                    adjustedStart = start + unit * iconHalf
-                    adjustedEnd = end - unit * iconHalf
-                } else {
-                    adjustedStart = end + (-unit) * iconHalf
-                    adjustedEnd = start - (-unit) * iconHalf
-                }
-
-                if (adjustedStart.x != adjustedEnd.x && adjustedStart.y != adjustedEnd.y) {
+        BoxWithConstraints(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(totalHeight)
+        ) {
+            val widthPx = with(LocalDensity.current) { maxWidth.toPx() }
+            val rowHeightPx = with(LocalDensity.current) { rowHeight.toPx() }
+            val topPaddingPx = with(LocalDensity.current) { topPadding.toPx() }
+            val iconSizePx = with(LocalDensity.current) { 64.dp.toPx() }
+            val iconHalf = iconSizePx / 2
 
 
-                    val newAdjustedStart = Offset(
-                        if (adjustedStart.x != adjustedEnd.x) start.x + iconHalf * sign(adjustedEnd.x - adjustedStart.x) else start.x,
-                        if (adjustedStart.y != adjustedEnd.y) start.y + iconHalf * sign(adjustedEnd.y - adjustedStart.y) else start.y
-                    )
-                    val newAdjustedEnd = Offset(
-                        x = if (adjustedStart.x != adjustedEnd.x) end.x - iconHalf * sign(adjustedEnd.x - adjustedStart.x) else start.x,
-                        y = if (adjustedStart.y != adjustedEnd.y) end.y else start.y
-                    )
+            val nodePositions = nodes.associateBy({ it.name }, { node ->
+                Offset(widthPx * node.col, topPaddingPx + (node.row * rowHeightPx))
+            })
 
-                    drawCornerLineAndArrow(newAdjustedStart, newAdjustedEnd)
-                    drawCornerText(newAdjustedStart, newAdjustedEnd, value, onBackgroundColor)
-                    drawCornerAnimatedDots(progressCorner, value, newAdjustedStart, newAdjustedEnd)
-                } else {
-                    drawStraightLineAndArrow(adjustedStart, adjustedEnd)
-                    drawStraightText(
-                        adjustedStart,
-                        adjustedEnd,
-                        value,
-                        onBackgroundColor,
-                        iconHalf,
-                        length * line.textOffsetX,
-                        length * line.textOffsetY
-                    )
-                    drawStraightAnimatedDots(progress, value, rawVector, adjustedStart, adjustedEnd)
-                }
-            }
-        }
+            val transition = rememberInfiniteTransition(label = "")
+            val progress by transition.animateFloat(
+                initialValue = 0f, targetValue = 1f, animationSpec = infiniteRepeatable(
+                    animation = tween(4000, easing = LinearEasing)
+                ), label = ""
+            )
 
-        nodes.forEach { node ->
-            val pos = nodePositions[node.name]!!
-            val nodeText = node.text(values)
+            val progressCorner by transition.animateFloat(
+                initialValue = 0f, targetValue = 1f, animationSpec = infiniteRepeatable(
+                    animation = tween(6000, easing = LinearEasing)
+                ), label = ""
+            )
 
-            when (node.textPosition) {
-                TextPosition.TOP -> {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.offset {
-                            IntOffset((pos.x - iconHalf).toInt(), (pos.y - 1.5 * iconHalf).toInt())
-                        }
-                    ) {
-                        if (nodeText != null) {
-                            Text(nodeText, color = MaterialTheme.colorScheme.onBackground)
-                        }
-                        Image(
-                            painterResource(node.icon),
-                            contentDescription = node.name,
-                            modifier = Modifier.size(64.dp),
-                            contentScale = ContentScale.Fit
-                        )
+            val onBackgroundColor = MaterialTheme.colorScheme.onBackground.toArgb()
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                lines.forEach { line ->
+                    val start = nodePositions[line.from] ?: return@forEach
+                    val end = nodePositions[line.to] ?: return@forEach
+
+                    val value = line.valueProvider(values)
+
+                    val rawVector = end - start
+                    val length = rawVector.getDistance()
+                    val unit = if (length != 0f) rawVector / length else Offset.Zero
+
+                    val adjustedStart: Offset
+                    val adjustedEnd: Offset
+
+                    if (value >= 0) {
+                        adjustedStart = start + unit * iconHalf
+                        adjustedEnd = end - unit * iconHalf
+                    } else {
+                        adjustedStart = end + (-unit) * iconHalf
+                        adjustedEnd = start - (-unit) * iconHalf
                     }
-                }
 
-                TextPosition.BOTTOM -> {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.offset {
-                            IntOffset((pos.x - iconHalf).toInt(), (pos.y - iconHalf).toInt())
-                        }
-                    ) {
-                        Image(
-                            painterResource(node.icon),
-                            contentDescription = node.name,
-                            modifier = Modifier.size(64.dp),
-                            contentScale = ContentScale.Fit
-                        )
-                        if (nodeText != null) {
-                            Text(nodeText, color = MaterialTheme.colorScheme.onBackground)
-                        }
-                    }
-                }
+                    if (adjustedStart.x != adjustedEnd.x && adjustedStart.y != adjustedEnd.y) {
 
-                TextPosition.NONE -> {
-                    Box(
-                        Modifier.offset {
-                            IntOffset((pos.x - iconHalf).toInt(), (pos.y - iconHalf).toInt())
-                        }
-                    ) {
-                        Image(
-                            painterResource(node.icon),
-                            contentDescription = node.name,
-                            modifier = Modifier.size(64.dp),
-                            contentScale = ContentScale.Fit
+
+                        val newAdjustedStart = Offset(
+                            if (adjustedStart.x != adjustedEnd.x) start.x + iconHalf * sign(adjustedEnd.x - adjustedStart.x) else start.x,
+                            if (adjustedStart.y != adjustedEnd.y) start.y + iconHalf * sign(adjustedEnd.y - adjustedStart.y) else start.y
                         )
+                        val newAdjustedEnd = Offset(
+                            x = if (adjustedStart.x != adjustedEnd.x) end.x - iconHalf * sign(adjustedEnd.x - adjustedStart.x) else start.x,
+                            y = if (adjustedStart.y != adjustedEnd.y) end.y else start.y
+                        )
+
+                        drawCornerLineAndArrow(newAdjustedStart, newAdjustedEnd)
+                        drawCornerText(newAdjustedStart, newAdjustedEnd, value, onBackgroundColor)
+                        drawCornerAnimatedDots(progressCorner, value, newAdjustedStart, newAdjustedEnd)
+                    } else {
+                        drawStraightLineAndArrow(adjustedStart, adjustedEnd)
+                        drawStraightText(
+                            adjustedStart, adjustedEnd, value, onBackgroundColor, iconHalf, length * line.textOffsetX, length * line.textOffsetY
+                        )
+                        drawStraightAnimatedDots(progress, value, rawVector, adjustedStart, adjustedEnd)
                     }
                 }
             }
-        }
 
+            nodes.forEach { node ->
+                val pos = nodePositions[node.name]!!
+                val nodeText = node.text(values)
+
+                when (node.textPosition) {
+                    TextPosition.TOP -> {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.offset {
+                                IntOffset((pos.x - iconHalf).toInt(), (pos.y - 1.5 * iconHalf).toInt())
+                            }) {
+                            if (nodeText != null) {
+                                Text(nodeText, color = MaterialTheme.colorScheme.onBackground)
+                            }
+                            Image(
+                                painterResource(node.icon),
+                                contentDescription = node.name,
+                                modifier = Modifier.size(64.dp),
+                                contentScale = ContentScale.Fit
+                            )
+                        }
+                    }
+
+                    TextPosition.BOTTOM -> {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.offset {
+                                IntOffset((pos.x - iconHalf).toInt(), (pos.y - iconHalf).toInt())
+                            }) {
+                            Image(
+                                painterResource(node.icon),
+                                contentDescription = node.name,
+                                modifier = Modifier.size(64.dp),
+                                contentScale = ContentScale.Fit
+                            )
+                            if (nodeText != null) {
+                                Text(nodeText, color = MaterialTheme.colorScheme.onBackground)
+                            }
+                        }
+                    }
+
+                    TextPosition.NONE -> {
+                        Box(
+                            Modifier.offset {
+                                IntOffset((pos.x - iconHalf).toInt(), (pos.y - iconHalf).toInt())
+                            }) {
+                            Image(
+                                painterResource(node.icon),
+                                contentDescription = node.name,
+                                modifier = Modifier.size(64.dp),
+                                contentScale = ContentScale.Fit
+                            )
+                        }
+                    }
+                }
+            }
+
+        }
     }
 }
 
@@ -449,6 +507,6 @@ fun DrawScope.drawTextOnLine(text: String, x: Float, y: Float, onBackgroundColor
 @Composable
 fun EnergyFlowScreenPreview() {
     PvDataResolverTheme {
-        EnergyFlowScreen(values = dummyValues)
+        EnergyScreen(values = dummyValues)
     }
 }
