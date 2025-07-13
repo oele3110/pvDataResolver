@@ -1,0 +1,141 @@
+{
+  "version": 1.1,
+  "pvData": [
+    {
+      "endpoint": "power_heater_rod",
+      "value": 0
+    },
+    {
+      "endpoint": "temperature_heater_rod",
+      "value": 71
+    },
+    {
+      "endpoint": "temp2",
+      "value": 68.4
+    },
+    {
+      "endpoint": "power_oven",
+      "value": 0
+    },
+    {
+      "endpoint": "power_bathroom_heater_top_floor",
+      "value": 0
+    },
+    {
+      "endpoint": "power_bathroom_heater_ground_floor",
+      "value": 0
+    },
+    {
+      "endpoint": "power_dishwasher",
+      "value": 3
+    },
+    {
+      "endpoint": "power_kwl",
+      "value": 13
+    },
+    {
+      "endpoint": "power_fridge",
+      "value": 10
+    },
+    {
+      "endpoint": "power_fridge_hwr",
+      "value": 39
+    },
+    {
+      "endpoint": "power_tv",
+      "value": 16
+    },
+    {
+      "endpoint": "power_tv_accessory",
+      "value": 33
+    },
+    {
+      "endpoint": "power_dryer",
+      "value": 0
+    },
+    {
+      "endpoint": "power_washing_machine",
+      "value": 9
+    },
+    {
+      "endpoint": "power_water_softening",
+      "value": 17
+    },
+    {
+      "endpoint": "temperature_hot_water",
+      "value": 68.5
+    },
+    {
+      "endpoint": "grid_power_total",
+      "value": 126
+    },
+    {
+      "endpoint": "sum_output_inverter_ac",
+      "value": 723
+    },
+    {
+      "endpoint": "sum_pv_power_inverter_dc",
+      "value": 0
+    },
+    {
+      "endpoint": "home_consumption",
+      "value": 830
+    },
+    {
+      "endpoint": "sum_battery_charge_discharge_dc",
+      "value": -789
+    },
+    {
+      "endpoint": "system_state_of_charge",
+      "value": 94
+    },
+    {
+      "endpoint": "home_consumption_from_pv",
+      "value": 626
+    },
+    {
+      "endpoint": "home_consumption_from_battery",
+      "value": 0
+    },
+    {
+      "endpoint": "home_consumption_from_grid",
+      "value": 0
+    },
+    {
+      "endpoint": "active_charge_mode",
+      "value": 3
+    },
+    {
+      "endpoint": "sum_wallbox_charge_power_total",
+      "value": 0
+    },
+    {
+      "endpoint": "sum_wallbox_charge_power_pv",
+      "value": 0
+    },
+    {
+      "endpoint": "sum_wallbox_charge_power_battery",
+      "value": 0
+    },
+    {
+      "endpoint": "sum_wallbox_charge_power_grid",
+      "value": 0
+    },
+    {
+      "endpoint": "sum_inverter_control_values",
+      "value": 0
+    },
+    {
+      "endpoint": "active_power_charging",
+      "value": 0
+    },
+    {
+      "endpoint": "current_session_duration",
+      "value": 82
+    },
+    {
+      "endpoint": "current_session_energy",
+      "value": 1829
+    }
+  ]
+}

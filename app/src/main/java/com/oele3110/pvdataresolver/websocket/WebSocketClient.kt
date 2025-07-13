@@ -1,13 +1,19 @@
-package com.oele3110.pvdataresolver
+package com.oele3110.pvdataresolver.websocket
 
 import android.util.Log
+import com.oele3110.pvdataresolver.domain.EnergyValues
+import com.oele3110.pvdataresolver.jsonparser.JsonParser
 import com.oele3110.pvdataresolver.pvdata.PvConfig
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import okhttp3.*
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
+import okhttp3.WebSocket
+import okhttp3.WebSocketListener
 import okio.ByteString
 
-class WebSocketClient {
+class WebSocketClient : IWebsocket {
     private val client = OkHttpClient()
     private var webSocket: WebSocket? = null
     private val request = Request.Builder().url("ws://192.168.178.110:8765").build()
@@ -17,11 +23,29 @@ class WebSocketClient {
     private val _messages = MutableStateFlow("No data ...")
     val messages = _messages.asStateFlow()
 
+    private val _data = MutableStateFlow(
+        EnergyValues(
+            0f, "",
+            0f, "",
+            0f, "",
+            0f, "",
+            0f, "",
+            0f, "",
+            0f, "",
+            0f, "",
+            0f, "",
+            0f, "",
+            0f, "",
+            0
+        )
+    )
+    override val data = _data.asStateFlow()
+
     // StateFlow for Status
     private val _connectionStatus = MutableStateFlow(false)
-    val connectionStatus = _connectionStatus.asStateFlow()
+    override val connectionStatus = _connectionStatus.asStateFlow()
 
-    val jsonParser = JsonParser()
+    private val jsonParser = JsonParser()
 
     private val listener = object : WebSocketListener() {
         var config: List<PvConfig> = listOf()
@@ -68,12 +92,12 @@ class WebSocketClient {
         }
     }
 
-    fun connect() {
+    override fun connect() {
         webSocket?.cancel()
         webSocket = client.newWebSocket(request, listener)
     }
 
-    fun disconnect() {
+    override fun disconnect() {
         webSocket?.close(1000, "Connection stopped")
     }
 }
