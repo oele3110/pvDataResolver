@@ -1,0 +1,296 @@
+{
+  "version": 1.1,
+  "pvConfig": [
+    {
+      "endpoint": "power_heater_rod",
+      "datatype": "int",
+      "unit": "W",
+      "displayString": "Leistung Heizstab",
+      "division": 1000,
+      "divisionUnit": "kWh",
+      "divisionDigits": 2
+    },
+    {
+      "endpoint": "temperature_heater_rod",
+      "datatype": "float",
+      "unit": "\u00b0C",
+      "displayString": "Temperatur 1"
+    },
+    {
+      "endpoint": "temp2",
+      "datatype": "float",
+      "unit": "\u00b0C",
+      "displayString": "Temperatur 2"
+    },
+    {
+      "endpoint": "power_oven",
+      "datatype": "int",
+      "unit": "W",
+      "displayString": "Leistung Backofen",
+      "division": 1000,
+      "divisionUnit": "kW",
+      "divisionDigits": 2
+    },
+    {
+      "endpoint": "power_bathroom_heater_top_floor",
+      "datatype": "int",
+      "unit": "W",
+      "displayString": "Leistung Badheizk\u00f6rper oben",
+      "division": 1000,
+      "divisionUnit": "kW",
+      "divisionDigits": 2
+    },
+    {
+      "endpoint": "power_bathroom_heater_ground_floor",
+      "datatype": "int",
+      "unit": "W",
+      "displayString": "Leistung Badheizk\u00f6rper unten",
+      "division": 1000,
+      "divisionUnit": "kW",
+      "divisionDigits": 2
+    },
+    {
+      "endpoint": "power_dishwasher",
+      "datatype": "int",
+      "unit": "W",
+      "displayString": "Leistung Geschirrsp\u00fcler",
+      "division": 1000,
+      "divisionUnit": "kW",
+      "divisionDigits": 2
+    },
+    {
+      "endpoint": "power_kwl",
+      "datatype": "int",
+      "unit": "W",
+      "displayString": "Leistung KWL",
+      "division": 1000,
+      "divisionUnit": "kW",
+      "divisionDigits": 2
+    },
+    {
+      "endpoint": "power_fridge",
+      "datatype": "int",
+      "unit": "W",
+      "displayString": "Leistung K\u00fchlschrank",
+      "division": 1000,
+      "divisionUnit": "kW",
+      "divisionDigits": 2
+    },
+    {
+      "endpoint": "power_fridge_hwr",
+      "datatype": "int",
+      "unit": "W",
+      "displayString": "Leistung K\u00fchlschrank HWR",
+      "division": 1000,
+      "divisionUnit": "kW",
+      "divisionDigits": 2
+    },
+    {
+      "endpoint": "power_tv",
+      "datatype": "int",
+      "unit": "W",
+      "displayString": "Leistung TV",
+      "division": 1000,
+      "divisionUnit": "kW",
+      "divisionDigits": 2
+    },
+    {
+      "endpoint": "power_tv_accessory",
+      "datatype": "int",
+      "unit": "W",
+      "displayString": "Leistung TV-Zubeh\u00f6r",
+      "division": 1000,
+      "divisionUnit": "kW",
+      "divisionDigits": 2
+    },
+    {
+      "endpoint": "power_dryer",
+      "datatype": "int",
+      "unit": "W",
+      "displayString": "Leistung Trockner",
+      "division": 1000,
+      "divisionUnit": "kW",
+      "divisionDigits": 2
+    },
+    {
+      "endpoint": "power_washing_machine",
+      "datatype": "int",
+      "unit": "W",
+      "displayString": "Leistung Waschmaschine",
+      "division": 1000,
+      "divisionUnit": "kW",
+      "divisionDigits": 2
+    },
+    {
+      "endpoint": "power_water_softening",
+      "datatype": "int",
+      "unit": "W",
+      "displayString": "Leistung Wasserenth\u00e4rtung",
+      "division": 1000,
+      "divisionUnit": "kW",
+      "divisionDigits": 2
+    },
+    {
+      "endpoint": "temperature_hot_water",
+      "datatype": "float",
+      "unit": "\u00b0C",
+      "displayString": "Warmwassertemperatur"
+    },
+    {
+      "endpoint": "grid_power_total",
+      "datatype": "int",
+      "unit": "W",
+      "displayString": "Grid Power Total",
+      "division": 1000,
+      "divisionUnit": "kW",
+      "divisionDigits": 2
+    },
+    {
+      "endpoint": "sum_output_inverter_ac",
+      "datatype": "int",
+      "unit": "W",
+      "displayString": "Sum output inverter AC",
+      "division": 1000,
+      "divisionUnit": "kW",
+      "divisionDigits": 2
+    },
+    {
+      "endpoint": "sum_pv_power_inverter_dc",
+      "datatype": "int",
+      "unit": "W",
+      "displayString": "Sum PV power inverter DC",
+      "division": 1000,
+      "divisionUnit": "kW",
+      "divisionDigits": 2
+    },
+    {
+      "endpoint": "home_consumption",
+      "datatype": "int",
+      "unit": "W",
+      "displayString": "Home Consumption",
+      "division": 1000,
+      "divisionUnit": "kW",
+      "divisionDigits": 2
+    },
+    {
+      "endpoint": "sum_battery_charge_discharge_dc",
+      "datatype": "int",
+      "unit": "W",
+      "displayString": "Sum battery charge / discharge DC",
+      "division": 1000,
+      "divisionUnit": "kW",
+      "divisionDigits": 2
+    },
+    {
+      "endpoint": "system_state_of_charge",
+      "datatype": "int",
+      "unit": "%",
+      "displayString": "System state of charge"
+    },
+    {
+      "endpoint": "home_consumption_from_pv",
+      "datatype": "int",
+      "unit": "W",
+      "displayString": "Home consumption from PV",
+      "division": 1000,
+      "divisionUnit": "kW",
+      "divisionDigits": 2
+    },
+    {
+      "endpoint": "home_consumption_from_battery",
+      "datatype": "int",
+      "unit": "W",
+      "displayString": "Home consumption from battery",
+      "division": 1000,
+      "divisionUnit": "kW",
+      "divisionDigits": 2
+    },
+    {
+      "endpoint": "home_consumption_from_grid",
+      "datatype": "int",
+      "unit": "W",
+      "displayString": "Home consumption from grid",
+      "division": 1000,
+      "divisionUnit": "kW",
+      "divisionDigits": 2
+    },
+    {
+      "endpoint": "active_charge_mode",
+      "datatype": "int",
+      "unit": "",
+      "displayString": "Active charge mode"
+    },
+    {
+      "endpoint": "sum_wallbox_charge_power_total",
+      "datatype": "int",
+      "unit": "W",
+      "displayString": "Sum wallbox charge power total",
+      "division": 1000,
+      "divisionUnit": "kW",
+      "divisionDigits": 2
+    },
+    {
+      "endpoint": "sum_wallbox_charge_power_pv",
+      "datatype": "int",
+      "unit": "W",
+      "displayString": "Sum wallbox charge power PV",
+      "division": 1000,
+      "divisionUnit": "kW",
+      "divisionDigits": 2
+    },
+    {
+      "endpoint": "sum_wallbox_charge_power_battery",
+      "datatype": "int",
+      "unit": "W",
+      "displayString": "Sum wallbox charge power battery",
+      "division": 1000,
+      "divisionUnit": "kW",
+      "divisionDigits": 2
+    },
+    {
+      "endpoint": "sum_wallbox_charge_power_grid",
+      "datatype": "int",
+      "unit": "W",
+      "displayString": "Sum wallbox charge power grid",
+      "division": 1000,
+      "divisionUnit": "kW",
+      "divisionDigits": 2
+    },
+    {
+      "endpoint": "sum_inverter_control_values",
+      "datatype": "int",
+      "unit": "W",
+      "displayString": "Sum inverter control values",
+      "division": 1000,
+      "divisionUnit": "kW",
+      "divisionDigits": 2
+    },
+    {
+      "endpoint": "active_power_charging",
+      "datatype": "int",
+      "unit": "kW",
+      "displayString": "Ladeleistung",
+      "division": 1000,
+      "divisionUnit": "kW",
+      "divisionDigits": 2
+    },
+    {
+      "endpoint": "current_session_duration",
+      "datatype": "int",
+      "unit": "min",
+      "displayString": "Wallbox Verbindungsdauer",
+      "division": 60,
+      "divisionUnit": "h",
+      "divisionDigits": 1
+    },
+    {
+      "endpoint": "current_session_energy",
+      "datatype": "int",
+      "unit": "Wh",
+      "displayString": "Energie",
+      "division": 1000,
+      "divisionUnit": "kWh",
+      "divisionDigits": 2
+    }
+  ]
+}

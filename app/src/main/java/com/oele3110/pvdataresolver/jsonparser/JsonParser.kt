@@ -1,14 +1,14 @@
-package com.oele3110.pvdataresolver
+package com.oele3110.pvdataresolver.jsonparser
 
 import android.util.Log
 import com.beust.klaxon.Converter
 import com.beust.klaxon.JsonValue
 import com.beust.klaxon.Klaxon
-import com.oele3110.pvdataresolver.pvdata.PvDataResponse
 import com.oele3110.pvdataresolver.pvdata.DataType
 import com.oele3110.pvdataresolver.pvdata.PvConfig
 import com.oele3110.pvdataresolver.pvdata.PvData
-
+import com.oele3110.pvdataresolver.pvdata.PvDataResponse
+import java.math.RoundingMode
 
 class JsonParser {
     private val tag = this.javaClass.simpleName
@@ -79,7 +79,7 @@ class JsonParser {
     }
 
     private fun Double.roundTo(digits: Int): Double =
-        this.toBigDecimal().setScale(digits, java.math.RoundingMode.HALF_UP).toDouble()
+        this.toBigDecimal().setScale(digits, RoundingMode.HALF_UP).toDouble()
 
 
     private fun getUnit(pvData: PvData, config: PvConfig): String {

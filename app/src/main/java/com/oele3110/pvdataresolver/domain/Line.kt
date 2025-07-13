@@ -5,5 +5,5 @@ data class Line(
     val to: String,
     val textOffsetX: Float = 0f,
     val textOffsetY: Float = 0f,
-    val valueProvider: (EnergyValues) -> Int,
+    val valueProvider: (EnergyValues) -> Float,
 )

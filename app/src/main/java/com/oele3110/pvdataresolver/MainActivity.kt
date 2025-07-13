@@ -64,6 +64,9 @@ import com.oele3110.pvdataresolver.domain.Line
 import com.oele3110.pvdataresolver.domain.Node
 import com.oele3110.pvdataresolver.domain.TextPosition
 import com.oele3110.pvdataresolver.ui.theme.PvDataResolverTheme
+import com.oele3110.pvdataresolver.websocket.DummyWebSocketClient
+import com.oele3110.pvdataresolver.websocket.WebSocketClient
+import kotlin.math.abs
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.sign
@@ -71,31 +74,38 @@ import kotlin.math.sin
 
 
 val dummyValues = EnergyValues(
-    sumPvPowerInverterDc = 8223,
-    sumOutputInverterAc = 3213,
-    sumBatteryChargeDischargeDc = -313,
-    gridPowerTotal = 123,
-    homeConsumption = 1534,
-    sumWallboxChargePowerTotal = 542,
-    powerHeaterRod = 754,
-    houseConsumption = 300,
-    powerHeating = 723,
-    powerAc = 211,
-    batteryCapacity = 79,
-    wallboxConnectionStatus = 5
+    sumPvPowerInverterDc = 8223f, "",
+    sumOutputInverterAc = 3213f, "",
+    sumBatteryChargeDischargeDc = -313f, "",
+    gridPowerTotal = 123f, "",
+    homeConsumption = 1534f, "",
+    sumWallboxChargePowerTotal = 542f, "",
+    powerHeaterRod = 754f, "",
+    houseConsumption = 300f, "",
+    powerHeating = 723f, "",
+    batteryCapacity = 79f, "",
+    temperatureHeaterRod = 63f, "",
+    wallboxConnectionStatus = 5,
 )
 const val alpha = 0.8f
 val colorBlue: Color = Color(27, 175, 232, 255)
 
+
 class MainActivity : ComponentActivity() {
+    private val webSocketClient = DummyWebSocketClient(this)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
+
+        webSocketClient.connect()
+
         setContent {
             PvDataResolverTheme {
                 SetStatusBarColor()
                 //WebSocketApp()
-                EnergyScreen(values = dummyValues)
+                val energyValues by webSocketClient.data.collectAsState()
+                EnergyScreen(values = energyValues)
             }
 
         }
@@ -154,7 +164,13 @@ val nodes = listOf(
         textPosition = TextPosition.BOTTOM
     ),
     Node("Home", R.drawable.house_day, 0.5f, 5f),
-    Node("Heater", R.drawable.water_heater, 0.85f, 5f),
+    Node(
+        "Heater", R.drawable.water_heater,
+        0.85f,
+        5f,
+        text = { "${it.temperatureHeaterRod}°" },
+        textPosition = TextPosition.BOTTOM
+    ),
     // when only home consumption is shown, use this setting, otherwise the ones below
     Node("House Consumption", R.drawable.house_consumption, 0.5f, 6.5f),
     //Node("House Consumption", R.drawable.house_consumption, 0.5f, 7.5f),
@@ -166,11 +182,11 @@ fun getWallboxConnectionStatus(wallboxConnectionStatus: Int): String {
     return when (wallboxConnectionStatus) {
         2 -> "Verbunden"
         3 -> "Pause"
-        4 -> "Initialisierung"
+        4 -> "Init."
         5 -> "Laden"
         6 -> "Fehler"
-        7 -> "Service Mode"
-        else -> "Nicht verbunden"
+        7 -> "Service"
+        else -> "Nicht verb."
     }
 }
 
@@ -178,7 +194,7 @@ val lines = listOf(
     Line("PV", "Inverter") { it.sumPvPowerInverterDc },
     Line("Inverter", "SEM") { it.sumOutputInverterAc },
     Line("Inverter", "Battery") { it.sumBatteryChargeDischargeDc },
-    Line("SEM", "Grid") { it.gridPowerTotal },
+    Line("Grid", "SEM") { it.gridPowerTotal },
     Line("SEM", "Home") { it.homeConsumption },
     Line("Home", "Wallbox") { it.sumWallboxChargePowerTotal },
     Line("Home", "Heater") { it.powerHeaterRod },
@@ -191,6 +207,7 @@ val lines = listOf(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+//fun EnergyScreen(values: EnergyValues) {
 fun EnergyScreen(values: EnergyValues) {
     val scrollState = rememberScrollState()
 
@@ -301,7 +318,6 @@ private fun EnergyFlowScreen(values: EnergyValues) {
 
                     if (adjustedStart.x != adjustedEnd.x && adjustedStart.y != adjustedEnd.y) {
 
-
                         val newAdjustedStart = Offset(
                             if (adjustedStart.x != adjustedEnd.x) start.x + iconHalf * sign(adjustedEnd.x - adjustedStart.x) else start.x,
                             if (adjustedStart.y != adjustedEnd.y) start.y + iconHalf * sign(adjustedEnd.y - adjustedStart.y) else start.y
@@ -311,15 +327,19 @@ private fun EnergyFlowScreen(values: EnergyValues) {
                             y = if (adjustedStart.y != adjustedEnd.y) end.y else start.y
                         )
 
-                        drawCornerLineAndArrow(newAdjustedStart, newAdjustedEnd)
-                        drawCornerText(newAdjustedStart, newAdjustedEnd, value, onBackgroundColor)
-                        drawCornerAnimatedDots(progressCorner, value, newAdjustedStart, newAdjustedEnd)
+                        if (value != 0f) {
+                            drawCornerLineAndArrow(newAdjustedStart, newAdjustedEnd)
+                            drawCornerText(newAdjustedStart, newAdjustedEnd, value, onBackgroundColor)
+                            drawCornerAnimatedDots(progressCorner, value, newAdjustedStart, newAdjustedEnd)
+                        }
                     } else {
-                        drawStraightLineAndArrow(adjustedStart, adjustedEnd)
-                        drawStraightText(
-                            adjustedStart, adjustedEnd, value, onBackgroundColor, iconHalf, length * line.textOffsetX, length * line.textOffsetY
-                        )
-                        drawStraightAnimatedDots(progress, value, rawVector, adjustedStart, adjustedEnd)
+                        if (value != 0f) {
+                            drawStraightLineAndArrow(adjustedStart, adjustedEnd)
+                            drawStraightText(
+                                adjustedStart, adjustedEnd, value, onBackgroundColor, iconHalf, length * line.textOffsetX, length * line.textOffsetY
+                            )
+                            drawStraightAnimatedDots(progress, value, rawVector, adjustedStart, adjustedEnd)
+                        }
                     }
                 }
             }
@@ -335,7 +355,7 @@ private fun EnergyFlowScreen(values: EnergyValues) {
                                 IntOffset((pos.x - iconHalf).toInt(), (pos.y - 1.5 * iconHalf).toInt())
                             }) {
                             if (nodeText != null) {
-                                Text(nodeText, color = MaterialTheme.colorScheme.onBackground)
+                                Text(nodeText, color = MaterialTheme.colorScheme.onBackground, style = MaterialTheme.typography.bodySmall)
                             }
                             Image(
                                 painterResource(node.icon),
@@ -358,7 +378,7 @@ private fun EnergyFlowScreen(values: EnergyValues) {
                                 contentScale = ContentScale.Fit
                             )
                             if (nodeText != null) {
-                                Text(nodeText, color = MaterialTheme.colorScheme.onBackground)
+                                Text(nodeText, color = MaterialTheme.colorScheme.onBackground, style = MaterialTheme.typography.bodySmall)
                             }
                         }
                     }
@@ -384,12 +404,18 @@ private fun EnergyFlowScreen(values: EnergyValues) {
 }
 
 private fun DrawScope.drawStraightText(
-    adjustedStart: Offset, adjustedEnd: Offset, value: Int, onBackgroundColor: Int, iconHalf: Float, textOffsetX: Float = 0f, textOffsetY: Float = 0f
+    adjustedStart: Offset,
+    adjustedEnd: Offset,
+    value: Float,
+    onBackgroundColor: Int,
+    iconHalf: Float,
+    textOffsetX: Float = 0f,
+    textOffsetY: Float = 0f
 ) {
     if (adjustedStart.x == adjustedEnd.x) {
         // if line is vertical, adjust text position to have it right from the line
         drawTextOnLine(
-            "$value W",
+            "${abs(value)} W",
             (adjustedStart.x + adjustedEnd.x + textOffsetX) / 2 + iconHalf,
             (adjustedStart.y + adjustedEnd.y + textOffsetY) / 2,
             onBackgroundColor
@@ -397,15 +423,15 @@ private fun DrawScope.drawStraightText(
     } else {
         // if line is horizontal, adjust text position to have it above the line
         drawTextOnLine(
-            "$value W", (adjustedStart.x + adjustedEnd.x) / 2, (adjustedStart.y + adjustedEnd.y) / 2 - 20f, onBackgroundColor
+            "${abs(value)} W", (adjustedStart.x + adjustedEnd.x) / 2, (adjustedStart.y + adjustedEnd.y) / 2 - 20f, onBackgroundColor
         )
     }
 }
 
-private fun DrawScope.drawCornerText(start: Offset, end: Offset, value: Int, onBackgroundColor: Int) {
+private fun DrawScope.drawCornerText(start: Offset, end: Offset, value: Float, onBackgroundColor: Int) {
     val corner = Offset(start.x, end.y)
     drawTextOnLine(
-        "$value W", (corner.x + end.x) / 2, end.y - 20f, onBackgroundColor
+        "${abs(value)} W", (corner.x + end.x) / 2, end.y - 20f, onBackgroundColor
     )
 }
 
@@ -449,7 +475,7 @@ private fun DrawScope.drawArrow(end: Offset, beforeEnd: Offset) {
 }
 
 private fun DrawScope.drawStraightAnimatedDots(
-    progress: Float, value: Int, rawVector: Offset, start: Offset, end: Offset
+    progress: Float, value: Float, rawVector: Offset, start: Offset, end: Offset
 ) {
     // this offset makes sure that the dots are not exceeding the arrow
     val endOffset = if (value > 0) rawVector * 0.05f else -rawVector * 0.05f
@@ -465,7 +491,7 @@ private fun DrawScope.drawStraightAnimatedDots(
     }
 }
 
-private fun DrawScope.drawCornerAnimatedDots(progress: Float, value: Int, start: Offset, end: Offset) {
+private fun DrawScope.drawCornerAnimatedDots(progress: Float, value: Float, start: Offset, end: Offset) {
     val corner = Offset(start.x, end.y)
 
     val rawVector = end - corner
