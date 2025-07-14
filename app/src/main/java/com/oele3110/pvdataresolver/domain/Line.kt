@@ -6,4 +6,5 @@ data class Line(
     val textOffsetX: Float = 0f,
     val textOffsetY: Float = 0f,
     val valueProvider: (EnergyValues) -> Float,
+    val valueStringProvider: (EnergyValues) -> String,
 )
