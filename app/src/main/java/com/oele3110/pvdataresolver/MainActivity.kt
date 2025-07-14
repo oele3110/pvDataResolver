@@ -66,7 +66,6 @@ import com.oele3110.pvdataresolver.domain.TextPosition
 import com.oele3110.pvdataresolver.ui.theme.PvDataResolverTheme
 import com.oele3110.pvdataresolver.websocket.DummyWebSocketClient
 import com.oele3110.pvdataresolver.websocket.WebSocketClient
-import kotlin.math.abs
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.sign
@@ -92,6 +91,7 @@ val colorBlue: Color = Color(27, 175, 232, 255)
 
 
 class MainActivity : ComponentActivity() {
+    //private val webSocketClient = WebSocketClient()
     private val webSocketClient = DummyWebSocketClient(this)
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -191,15 +191,21 @@ fun getWallboxConnectionStatus(wallboxConnectionStatus: Int): String {
 }
 
 val lines = listOf(
-    Line("PV", "Inverter") { it.sumPvPowerInverterDc },
-    Line("Inverter", "SEM") { it.sumOutputInverterAc },
-    Line("Inverter", "Battery") { it.sumBatteryChargeDischargeDc },
-    Line("Grid", "SEM") { it.gridPowerTotal },
-    Line("SEM", "Home") { it.homeConsumption },
-    Line("Home", "Wallbox") { it.sumWallboxChargePowerTotal },
-    Line("Home", "Heater") { it.powerHeaterRod },
+    Line("PV", "Inverter", valueProvider = { it.sumPvPowerInverterDc }, valueStringProvider = { it.sumPvPowerInverterDcUnit }),
+    Line("Inverter", "SEM", valueProvider = { it.sumOutputInverterAc }, valueStringProvider = { it.sumOutputInverterAcUnit }),
+    Line("Battery", "Inverter", valueProvider = { it.sumBatteryChargeDischargeDc }, valueStringProvider = { it.sumBatteryChargeDischargeDcUnit }),
+    Line("Grid", "SEM", valueProvider = { it.gridPowerTotal }, valueStringProvider = { it.gridPowerTotalUnit }),
+    Line("SEM", "Home", valueProvider = { it.homeConsumption }, valueStringProvider = { it.homeConsumptionUnit }, textOffsetY = 0.4f),
+    Line(
+        "Home",
+        "Wallbox",
+        valueProvider = { it.sumWallboxChargePowerTotal },
+        valueStringProvider = { it.sumWallboxChargePowerTotalUnit },
+        textOffsetY = 0.4f
+    ),
+    Line("Home", "Heater", valueProvider = { it.powerHeaterRod }, valueStringProvider = { it.powerHeaterRodUnit }, textOffsetY = 0.4f),
     // when only home consumption is shown, use this setting, otherwise the ones below
-    Line("Home", "House Consumption") { it.houseConsumption },
+    Line("Home", "House Consumption", valueProvider = { it.houseConsumption }, valueStringProvider = { it.houseConsumptionUnit }, textOffsetY = 0.4f),
     //Line("Home", "House Consumption", textOffsetY = 0.4f) { it.houseConsumption },
     //Line("Home", "Heating") { it.powerHeating },
     //Line("Home", "AC") { it.powerAc }
@@ -300,6 +306,7 @@ private fun EnergyFlowScreen(values: EnergyValues) {
                     val end = nodePositions[line.to] ?: return@forEach
 
                     val value = line.valueProvider(values)
+                    val valueString = line.valueStringProvider(values)
 
                     val rawVector = end - start
                     val length = rawVector.getDistance()
@@ -329,14 +336,21 @@ private fun EnergyFlowScreen(values: EnergyValues) {
 
                         if (value != 0f) {
                             drawCornerLineAndArrow(newAdjustedStart, newAdjustedEnd)
-                            drawCornerText(newAdjustedStart, newAdjustedEnd, value, onBackgroundColor)
+                            drawCornerText(newAdjustedStart, newAdjustedEnd, value, valueString, onBackgroundColor)
                             drawCornerAnimatedDots(progressCorner, value, newAdjustedStart, newAdjustedEnd)
                         }
                     } else {
                         if (value != 0f) {
                             drawStraightLineAndArrow(adjustedStart, adjustedEnd)
                             drawStraightText(
-                                adjustedStart, adjustedEnd, value, onBackgroundColor, iconHalf, length * line.textOffsetX, length * line.textOffsetY
+                                adjustedStart,
+                                adjustedEnd,
+                                value,
+                                valueString,
+                                onBackgroundColor,
+                                iconHalf,
+                                length * line.textOffsetX,
+                                length * line.textOffsetY
                             )
                             drawStraightAnimatedDots(progress, value, rawVector, adjustedStart, adjustedEnd)
                         }
@@ -407,6 +421,7 @@ private fun DrawScope.drawStraightText(
     adjustedStart: Offset,
     adjustedEnd: Offset,
     value: Float,
+    valueString: String,
     onBackgroundColor: Int,
     iconHalf: Float,
     textOffsetX: Float = 0f,
@@ -415,7 +430,7 @@ private fun DrawScope.drawStraightText(
     if (adjustedStart.x == adjustedEnd.x) {
         // if line is vertical, adjust text position to have it right from the line
         drawTextOnLine(
-            "${abs(value)} W",
+            valueString,
             (adjustedStart.x + adjustedEnd.x + textOffsetX) / 2 + iconHalf,
             (adjustedStart.y + adjustedEnd.y + textOffsetY) / 2,
             onBackgroundColor
@@ -423,15 +438,15 @@ private fun DrawScope.drawStraightText(
     } else {
         // if line is horizontal, adjust text position to have it above the line
         drawTextOnLine(
-            "${abs(value)} W", (adjustedStart.x + adjustedEnd.x) / 2, (adjustedStart.y + adjustedEnd.y) / 2 - 20f, onBackgroundColor
+            valueString, (adjustedStart.x + adjustedEnd.x) / 2, (adjustedStart.y + adjustedEnd.y) / 2 - 20f, onBackgroundColor
         )
     }
 }
 
-private fun DrawScope.drawCornerText(start: Offset, end: Offset, value: Float, onBackgroundColor: Int) {
+private fun DrawScope.drawCornerText(start: Offset, end: Offset, value: Float, valueString: String, onBackgroundColor: Int) {
     val corner = Offset(start.x, end.y)
     drawTextOnLine(
-        "${abs(value)} W", (corner.x + end.x) / 2, end.y - 20f, onBackgroundColor
+        valueString, (corner.x + end.x) / 2, end.y - 20f, onBackgroundColor
     )
 }
 
