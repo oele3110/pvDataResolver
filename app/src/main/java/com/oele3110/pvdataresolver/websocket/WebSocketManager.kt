@@ -36,6 +36,8 @@ class WebSocketManager @Inject constructor(
 
     @Volatile
     private var isManualDisconnect = false
+    @Volatile
+    private var isConnecting = false
 
     private val json = Json {
         ignoreUnknownKeys = true
@@ -51,6 +53,7 @@ class WebSocketManager @Inject constructor(
     private val listener = object : WebSocketListener() {
         override fun onOpen(webSocket: WebSocket, response: Response) {
             Log.i(tag, "✅ Connected to ${webSocket.request().url}")
+            isConnecting = false
             reconnectDelayMs = INITIAL_RECONNECT_DELAY_MS
             messageCount = 0
             _connectionStatus.value = true
@@ -80,20 +83,32 @@ class WebSocketManager @Inject constructor(
 
         override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
             Log.i(tag, "🔌 Connection closed — code=$code reason='$reason' (messages received: $messageCount)")
+            isConnecting = false
             _connectionStatus.value = false
             scheduleReconnectIfNeeded()
         }
 
         override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
+            // webSocket.cancel() inside doConnect() also triggers onFailure — ignore it
+            if (t.message == "Canceled") {
+                Log.d(tag, "Socket cancelled intentionally — no reconnect")
+                isConnecting = false
+                return
+            }
             Log.e(tag, "💥 Connection failure after $messageCount messages: ${t.message}")
             response?.let { Log.e(tag, "   HTTP response: ${it.code} ${it.message}") }
+            isConnecting = false
             _connectionStatus.value = false
             scheduleReconnectIfNeeded()
         }
     }
 
     override fun connect() {
-        Log.i(tag, "connect() called — isManualDisconnect was $isManualDisconnect")
+        if (isConnecting) {
+            Log.d(tag, "connect() — already connecting, skipping")
+            return
+        }
+        Log.i(tag, "connect() called")
         isManualDisconnect = false
         reconnectDelayMs = INITIAL_RECONNECT_DELAY_MS
         reconnectJob?.cancel()
@@ -103,9 +118,11 @@ class WebSocketManager @Inject constructor(
     override fun disconnect() {
         Log.i(tag, "disconnect() called — stopping reconnects")
         isManualDisconnect = true
+        isConnecting = false
         reconnectJob?.cancel()
         webSocket?.close(1000, "Manual disconnect")
         _connectionStatus.value = false
+        _data.value = EnergyData()
     }
 
     private fun doConnect() {
@@ -114,10 +131,11 @@ class WebSocketManager @Inject constructor(
             return
         }
         Log.i(tag, "🔗 Connecting to WebSocket...")
+        isConnecting = true
         val request = Request.Builder()
             .url("wss://pv.dennislampert.de/ws?token=$token")
             .build()
-        webSocket?.cancel()
+        webSocket?.cancel() // onFailure("Canceled") wird ignoriert
         webSocket = client.newWebSocket(request, listener)
     }
 
@@ -131,7 +149,7 @@ class WebSocketManager @Inject constructor(
             Log.i(tag, "⏳ Reconnecting in ${reconnectDelayMs / 1000}s...")
             delay(reconnectDelayMs)
             reconnectDelayMs = (reconnectDelayMs * 2).coerceAtMost(MAX_RECONNECT_DELAY_MS)
-            if (!isManualDisconnect) doConnect()
+            if (!isManualDisconnect && !isConnecting) doConnect()
         }
     }
 

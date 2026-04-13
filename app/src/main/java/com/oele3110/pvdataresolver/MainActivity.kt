@@ -12,18 +12,13 @@ import androidx.core.view.WindowInsetsControllerCompat
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.oele3110.pvdataresolver.data.auth.AuthRepository
 import com.oele3110.pvdataresolver.ui.dashboard.DashboardScreen
 import com.oele3110.pvdataresolver.ui.login.LoginScreen
 import com.oele3110.pvdataresolver.ui.theme.PvDataResolverTheme
 import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-
-    @Inject
-    lateinit var authRepository: AuthRepository
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -33,20 +28,17 @@ class MainActivity : ComponentActivity() {
             PvDataResolverTheme {
                 SetStatusBarColor()
                 val navController = rememberNavController()
-                val startDestination = if (authRepository.isLoggedIn()) "dashboard" else "login"
 
-                NavHost(navController = navController, startDestination = startDestination) {
-                    composable("login") {
-                        LoginScreen(
-                            onLoginSuccess = {
-                                navController.navigate("dashboard") {
-                                    popUpTo("login") { inclusive = true }
-                                }
-                            }
+                NavHost(navController = navController, startDestination = "dashboard") {
+                    composable("dashboard") {
+                        DashboardScreen(
+                            onNavigateToLogin = { navController.navigate("login") }
                         )
                     }
-                    composable("dashboard") {
-                        DashboardScreen()
+                    composable("login") {
+                        LoginScreen(
+                            onLoginSuccess = { navController.popBackStack() }
+                        )
                     }
                 }
             }

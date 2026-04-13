@@ -12,10 +12,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -29,7 +34,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 
@@ -39,6 +46,7 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
     val uiState by viewModel.uiState.collectAsState()
     var username by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
+    var passwordVisible by rememberSaveable { mutableStateOf(false) }
     val isLoading = uiState is LoginUiState.Loading
 
     LaunchedEffect(Unit) {
@@ -74,6 +82,10 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
                     label = { Text("Benutzername") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Email,
+                        imeAction = ImeAction.Next
+                    ),
                     enabled = !isLoading
                 )
                 OutlinedTextField(
@@ -82,13 +94,30 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
                     label = { Text("Passwort") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
-                    visualTransformation = PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                    // KeyboardType.Password deaktiviert Vorschläge und Autocorrect
+                    // — auch wenn das Passwort im Klartext angezeigt wird
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Password,
+                        imeAction = ImeAction.Done
+                    ),
                     keyboardActions = KeyboardActions(onDone = {
                         if (username.isNotBlank() && password.isNotBlank()) {
                             viewModel.login(username, password)
                         }
                     }),
+                    visualTransformation = if (passwordVisible) {
+                        VisualTransformation.None
+                    } else {
+                        PasswordVisualTransformation()
+                    },
+                    trailingIcon = {
+                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                            Icon(
+                                imageVector = if (passwordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                contentDescription = if (passwordVisible) "Passwort verbergen" else "Passwort anzeigen"
+                            )
+                        }
+                    },
                     enabled = !isLoading
                 )
                 if (uiState is LoginUiState.Error) {

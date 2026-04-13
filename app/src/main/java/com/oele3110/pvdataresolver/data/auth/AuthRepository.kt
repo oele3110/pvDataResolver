@@ -7,6 +7,8 @@ import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -48,13 +50,21 @@ class AuthRepository @Inject constructor(
         )
     }
 
-    fun getToken(): String? = prefs.getString("access_token", null)
+    private val _isLoggedIn = MutableStateFlow(false)
+    val isLoggedIn = _isLoggedIn.asStateFlow()
 
-    fun isLoggedIn(): Boolean = getToken() != null
+    init {
+        // Initialize from persisted token — triggers lazy prefs init
+        _isLoggedIn.value = getToken() != null
+        Log.d(tag, "init — isLoggedIn=${_isLoggedIn.value}")
+    }
+
+    fun getToken(): String? = prefs.getString("access_token", null)
 
     fun logout() {
         Log.i(tag, "logout() — clearing stored token")
         prefs.edit().remove("access_token").apply()
+        _isLoggedIn.value = false
     }
 
     suspend fun login(username: String, password: String): Result<Unit> = withContext(Dispatchers.IO) {
@@ -73,6 +83,7 @@ class AuthRepository @Inject constructor(
                     ?: return@withContext Result.failure(Exception("Leere Server-Antwort"))
                 val loginResponse = json.decodeFromString<LoginResponse>(responseBody)
                 prefs.edit().putString("access_token", loginResponse.accessToken).apply()
+                _isLoggedIn.value = true
                 Log.i(tag, "✅ Login successful — token stored")
                 Result.success(Unit)
             } else {

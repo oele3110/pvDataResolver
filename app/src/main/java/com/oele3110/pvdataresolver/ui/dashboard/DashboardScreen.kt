@@ -12,6 +12,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -24,16 +25,27 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -50,6 +62,9 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.times
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.oele3110.pvdataresolver.R
 import com.oele3110.pvdataresolver.data.model.BatteryData
 import com.oele3110.pvdataresolver.data.model.EnergyData
@@ -172,29 +187,132 @@ private val lines = listOf(
 )
 
 @Composable
-fun DashboardScreen(viewModel: DashboardViewModel = hiltViewModel()) {
+fun DashboardScreen(
+    onNavigateToLogin: () -> Unit,
+    viewModel: DashboardViewModel = hiltViewModel()
+) {
     val energyData by viewModel.energyData.collectAsState()
-    EnergyScreen(values = energyData)
+    val isLoggedIn by viewModel.isLoggedIn.collectAsState()
+    val isConnected by viewModel.connectionStatus.collectAsState()
+
+    // Reconnect when returning to this screen (e.g. after login)
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) viewModel.connectIfNeeded()
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
+    EnergyScreen(
+        values = energyData,
+        isLoggedIn = isLoggedIn,
+        isConnected = isConnected,
+        onLogin = onNavigateToLogin,
+        onLogout = { viewModel.logout() }
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EnergyScreen(values: EnergyData) {
+fun EnergyScreen(
+    values: EnergyData,
+    isLoggedIn: Boolean = false,
+    isConnected: Boolean = false,
+    onLogin: () -> Unit = {},
+    onLogout: () -> Unit = {}
+) {
     val scrollState = rememberScrollState()
+    var menuExpanded by remember { mutableStateOf(false) }
+
     Scaffold(topBar = {
         TopAppBar(
-            title = { Text("Energy Flow Dashboard", style = MaterialTheme.typography.headlineLarge) }
+            title = { Text("Energy Flow Dashboard", style = MaterialTheme.typography.headlineLarge) },
+            actions = {
+                Box {
+                    IconButton(onClick = { menuExpanded = true }) {
+                        Icon(Icons.Default.MoreVert, contentDescription = "Menü")
+                    }
+                    DropdownMenu(
+                        expanded = menuExpanded,
+                        onDismissRequest = { menuExpanded = false }
+                    ) {
+                        if (isLoggedIn) {
+                            DropdownMenuItem(
+                                text = { Text("Abmelden") },
+                                onClick = { menuExpanded = false; onLogout() }
+                            )
+                        } else {
+                            DropdownMenuItem(
+                                text = { Text("Anmelden") },
+                                onClick = { menuExpanded = false; onLogin() }
+                            )
+                        }
+                    }
+                }
+            }
         )
     }, content = { innerPadding ->
-        Column(
-            modifier = Modifier
-                .padding(innerPadding)
-                .verticalScroll(scrollState)
-        ) {
-            EnergyFlowCard(values)
-            StatusCard()
-            StatusCard()
-            StatusCard()
+        when {
+            !isLoggedIn -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text(
+                            "Nicht angemeldet",
+                            style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            "Bitte über das Menü anmelden.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+
+            !isConnected -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        CircularProgressIndicator()
+                        Text(
+                            "Verbinde...",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+
+            else -> {
+                Column(
+                    modifier = Modifier
+                        .padding(innerPadding)
+                        .verticalScroll(scrollState)
+                ) {
+                    EnergyFlowCard(values)
+                    StatusCard()
+                    StatusCard()
+                    StatusCard()
+                }
+            }
         }
     })
 }

@@ -71,5 +71,6 @@ class DummyWebSocketClient : IWebsocket {
         job?.cancel()
         job = null
         _connectionStatus.value = false
+        _data.value = EnergyData()
     }
 }
