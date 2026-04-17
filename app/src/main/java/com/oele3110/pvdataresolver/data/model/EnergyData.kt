@@ -39,7 +39,8 @@ data class WallboxData(
     @SerialName("power_grid_w") val powerGridW: Float? = null,
     @SerialName("session_energy_wh") val sessionEnergyWh: Float? = null,
     @SerialName("session_duration_min") val sessionDurationMin: Float? = null,
-    @SerialName("active_charge_mode") val activeChargeMode: Int? = null
+    @SerialName("active_charge_mode") val activeChargeMode: Int? = null,
+    @SerialName("status_code") val statusCode: Int? = null
 )
 
 @Serializable

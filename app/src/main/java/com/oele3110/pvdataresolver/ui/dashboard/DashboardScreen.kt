@@ -113,7 +113,7 @@ private val nodes = listOf(
     Node("Grid", R.drawable.grid, 0.85f, 3.5f),
     Node(
         "Wallbox", R.drawable.wallbox, 0.15f, 5f,
-        text = { getWallboxStatus(it.wallbox?.activeChargeMode ?: 0) },
+        text = { getWallboxStatus(it.wallbox?.statusCode ?: 0) },
         textPosition = TextPosition.BOTTOM
     ),
     Node("Home", R.drawable.house_day, 0.5f, 5f),
@@ -124,6 +124,14 @@ private val nodes = listOf(
     ),
     Node("House Consumption", R.drawable.house_consumption, 0.5f, 6.5f),
 )
+
+fun getChargeModeIcon(mode: Int): Int? = when (mode) {
+    1 -> R.drawable.charge_mode_lock
+    2 -> R.drawable.charge_mode_power
+    3 -> R.drawable.charge_mode_solar
+    4 -> R.drawable.charge_mode_solar_plus
+    else -> null
+}
 
 fun getWallboxStatus(mode: Int): String = when (mode) {
     2 -> "Verbunden"
@@ -424,6 +432,7 @@ private fun EnergyFlowCard(values: EnergyData) {
                         }
                     }
                 }
+
             }
 
             nodes.forEach { node ->
@@ -467,6 +476,25 @@ private fun EnergyFlowCard(values: EnergyData) {
                             Image(painterResource(node.icon), node.name, Modifier.size(64.dp), contentScale = ContentScale.Fit)
                         }
                     }
+                }
+            }
+
+            // Charge mode icon above Wallbox (32dp = half of node icon size)
+            val chargeModeRes = getChargeModeIcon(values.wallbox?.activeChargeMode ?: 0)
+            if (chargeModeRes != null) {
+                val wallboxPos = nodePositions["Wallbox"]!!
+                Box(Modifier.offset {
+                    IntOffset(
+                        (wallboxPos.x - iconHalf / 2).toInt(),
+                        (wallboxPos.y - iconHalf * 2).toInt()
+                    )
+                }) {
+                    Image(
+                        painterResource(chargeModeRes),
+                        contentDescription = "Charge Mode",
+                        modifier = Modifier.size(32.dp),
+                        contentScale = ContentScale.Fit
+                    )
                 }
             }
         }

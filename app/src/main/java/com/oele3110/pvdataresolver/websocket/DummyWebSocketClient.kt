@@ -30,7 +30,7 @@ class DummyWebSocketClient : IWebsocket {
         EnergyData(
             inverter = InverterData(powerAcW = 3500f, powerDcW = 3600f, homeConsumptionFromPvW = 2300f),
             smartmeter = SmartmeterData(gridPowerW = 1200f, homeConsumptionW = 3500f),
-            wallbox = WallboxData(powerW = 7400f, activeChargeMode = 5),
+            wallbox = WallboxData(powerW = 7400f, activeChargeMode = 5, statusCode = 5),
             battery = BatteryData(powerW = -1000f, stateOfChargePct = 82f),
             heater = HeaterData(powerW = 2000f, temp1C = 65.3f, temp2C = 61.1f),
             calculated = CalculatedData(selfConsumptionRatePct = 65.7f, autarkyRatePct = 82.3f)
