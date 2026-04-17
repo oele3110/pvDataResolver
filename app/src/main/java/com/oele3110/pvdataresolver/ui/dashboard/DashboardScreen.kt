@@ -112,7 +112,9 @@ private val nodes = listOf(
     Node("SEM", R.drawable.sem, 0.5f, 3.5f),
     Node("Grid", R.drawable.grid, 0.85f, 3.5f),
     Node(
-        "Wallbox", R.drawable.wallbox, 0.15f, 5f,
+        "Wallbox",
+        icon = { if ((it.wallbox?.statusCode ?: 0) in 2..5) R.drawable.bulli else R.drawable.wallbox },
+        col = 0.15f, row = 5f,
         text = { getWallboxStatus(it.wallbox?.statusCode ?: 0) },
         textPosition = TextPosition.BOTTOM
     ),
@@ -451,7 +453,7 @@ private fun EnergyFlowCard(values: EnergyData) {
                                 color = MaterialTheme.colorScheme.onBackground,
                                 style = MaterialTheme.typography.bodySmall
                             )
-                            Image(painterResource(node.icon), node.name, Modifier.size(64.dp), contentScale = ContentScale.Fit)
+                            Image(painterResource(node.icon(values)), node.name, Modifier.size(64.dp), contentScale = ContentScale.Fit)
                         }
                     }
 
@@ -462,7 +464,7 @@ private fun EnergyFlowCard(values: EnergyData) {
                                 IntOffset((pos.x - iconHalf).toInt(), (pos.y - iconHalf).toInt())
                             }
                         ) {
-                            Image(painterResource(node.icon), node.name, Modifier.size(64.dp), contentScale = ContentScale.Fit)
+                            Image(painterResource(node.icon(values)), node.name, Modifier.size(64.dp), contentScale = ContentScale.Fit)
                             if (nodeText != null) Text(
                                 nodeText,
                                 color = MaterialTheme.colorScheme.onBackground,
@@ -473,26 +475,26 @@ private fun EnergyFlowCard(values: EnergyData) {
 
                     TextPosition.NONE -> {
                         Box(Modifier.offset { IntOffset((pos.x - iconHalf).toInt(), (pos.y - iconHalf).toInt()) }) {
-                            Image(painterResource(node.icon), node.name, Modifier.size(64.dp), contentScale = ContentScale.Fit)
+                            Image(painterResource(node.icon(values)), node.name, Modifier.size(64.dp), contentScale = ContentScale.Fit)
                         }
                     }
                 }
             }
 
-            // Charge mode icon above Wallbox (32dp = half of node icon size)
             val chargeModeRes = getChargeModeIcon(values.wallbox?.activeChargeMode ?: 0)
             if (chargeModeRes != null) {
                 val wallboxPos = nodePositions["Wallbox"]!!
+                val chargeModeHalfPx = with(LocalDensity.current) { 24.dp.toPx() }
                 Box(Modifier.offset {
                     IntOffset(
-                        (wallboxPos.x - iconHalf / 2).toInt(),
-                        (wallboxPos.y - iconHalf * 2).toInt()
+                        (wallboxPos.x - chargeModeHalfPx).toInt(),
+                        (wallboxPos.y - iconHalf * 2.3f).toInt()
                     )
                 }) {
                     Image(
                         painterResource(chargeModeRes),
                         contentDescription = "Charge Mode",
-                        modifier = Modifier.size(32.dp),
+                        modifier = Modifier.size(48.dp),
                         contentScale = ContentScale.Fit
                     )
                 }
