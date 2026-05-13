@@ -71,7 +71,8 @@ data class ConsumersData(
     @SerialName("power_dryer") val powerDryer: Float? = null,
     @SerialName("power_washing_machine") val powerWashingMachine: Float? = null,
     @SerialName("power_water_softening") val powerWaterSoftening: Float? = null,
-    @SerialName("temperature_hot_water") val temperatureHotWater: Float? = null
+    @SerialName("temperature_hot_water") val temperatureHotWater: Float? = null,
+    @SerialName("car_soc") val carSoc: Float? = null
 )
 
 @Serializable

@@ -101,7 +101,7 @@ fun formatWatts(value: Float): String {
     }
 }
 
-private val nodes = listOf(
+private fun buildNodes(showCarSoc: Boolean) = listOf(
     Node("PV", R.drawable.pv, 0.5f, 0.5f),
     Node(
         "Battery", R.drawable.battery, 0.15f, 2f,
@@ -115,7 +115,10 @@ private val nodes = listOf(
         "Wallbox",
         icon = { if ((it.wallbox?.statusCode ?: 0) in 2..5) R.drawable.bulli else R.drawable.wallbox },
         col = 0.15f, row = 5f,
-        text = { getWallboxStatus(it.wallbox?.statusCode ?: 0) },
+        text = {
+            val status = getWallboxStatus(it.wallbox?.statusCode ?: 0)
+            if (showCarSoc) "$status\n${it.consumers?.carSoc?.toInt() ?: "--"}%" else status
+        },
         textPosition = TextPosition.BOTTOM
     ),
     Node("Home", R.drawable.house_day, 0.5f, 5f),
@@ -204,6 +207,7 @@ fun DashboardScreen(
     val energyData by viewModel.energyData.collectAsState()
     val isLoggedIn by viewModel.isLoggedIn.collectAsState()
     val isConnected by viewModel.connectionStatus.collectAsState()
+    val showCarSoc by viewModel.showCarSoc.collectAsState()
 
     // Reconnect when returning to this screen (e.g. after login)
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -220,7 +224,9 @@ fun DashboardScreen(
         isLoggedIn = isLoggedIn,
         isConnected = isConnected,
         onLogin = onNavigateToLogin,
-        onLogout = { viewModel.logout() }
+        onLogout = { viewModel.logout() },
+        showCarSoc = showCarSoc,
+        onToggleCarSoc = { viewModel.toggleCarSoc() }
     )
 }
 
@@ -231,7 +237,9 @@ fun EnergyScreen(
     isLoggedIn: Boolean = false,
     isConnected: Boolean = false,
     onLogin: () -> Unit = {},
-    onLogout: () -> Unit = {}
+    onLogout: () -> Unit = {},
+    showCarSoc: Boolean = true,
+    onToggleCarSoc: () -> Unit = {}
 ) {
     val scrollState = rememberScrollState()
     var menuExpanded by remember { mutableStateOf(false) }
@@ -248,6 +256,10 @@ fun EnergyScreen(
                         expanded = menuExpanded,
                         onDismissRequest = { menuExpanded = false }
                     ) {
+                        DropdownMenuItem(
+                            text = { Text(if (showCarSoc) "Auto SOC ausblenden" else "Auto SOC einblenden") },
+                            onClick = { onToggleCarSoc(); menuExpanded = false }
+                        )
                         if (isLoggedIn) {
                             DropdownMenuItem(
                                 text = { Text("Abmelden") },
@@ -317,7 +329,7 @@ fun EnergyScreen(
                         .padding(innerPadding)
                         .verticalScroll(scrollState)
                 ) {
-                    EnergyFlowCard(values)
+                    EnergyFlowCard(values, showCarSoc)
                     StatusCard()
                     StatusCard()
                     StatusCard()
@@ -346,7 +358,8 @@ private fun StatusCard() {
 
 @SuppressLint("UnusedBoxWithConstraintsScope")
 @Composable
-private fun EnergyFlowCard(values: EnergyData) {
+private fun EnergyFlowCard(values: EnergyData, showCarSoc: Boolean = true) {
+    val nodes = buildNodes(showCarSoc)
     Card(
         modifier = Modifier
             .padding(horizontal = 16.dp, vertical = 8.dp)
@@ -468,7 +481,8 @@ private fun EnergyFlowCard(values: EnergyData) {
                             if (nodeText != null) Text(
                                 nodeText,
                                 color = MaterialTheme.colorScheme.onBackground,
-                                style = MaterialTheme.typography.bodySmall
+                                style = MaterialTheme.typography.bodySmall,
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
                             )
                         }
                     }
